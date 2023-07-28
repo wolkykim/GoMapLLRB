@@ -3,7 +3,7 @@
 // stores the keys in order which allows ordered iteration and find nearest keys.
 //
 // Copyright (c) 2023, Seungyoung Kim
-// https://github.com/wolkykim/gomapllrb
+// https://github.com/wolkykim/GoMapLLRB
 package gomapllrb
 
 import (

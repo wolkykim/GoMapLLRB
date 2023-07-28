@@ -1,4 +1,4 @@
-# About GoMapLLRB
+# About GoMapLLRB [![Actions Status](https://github.com/wolkykim/gomapllrb/workflows/CI/badge.svg)](https://github.com/wolkykim/gomapllrb/actions)
 
 Package GoMapLLRB implements an in-memory key/value store using LLRB algorithm.
 LLRB (Left-Leaning Red-Black) is a self-balancing binary search tree that
@@ -35,6 +35,7 @@ t.Delete("key")
 Hello World
 ```
 Other getter methods: Exist(), GetMin(), GetMax(), Bigger(), Smaller(), EqualOrBigger(), EqualOrSmaller(), ...
+See [API documents](https://pkg.go.dev/github.com/wolkykim/gomapllrb#section-documentation)
 
 ### Iteration
 ```
@@ -93,4 +94,4 @@ GoMapLLRG is published under 2-clause BSD license known as Simplified BSD Licens
 Please refer the LICENSE document included in the package for more details.
 
 Wanna thank me? Give it a star to this project if it helps. That'll do it!
-https://github.com/wolkykim/gomapllrb
+https://github.com/wolkykim/GoMapLLRB
