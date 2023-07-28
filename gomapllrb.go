@@ -766,7 +766,7 @@ func checkLLRB[K constraints.Ordered](node *Node[K]) error {
 }
 
 /*************************************************************************
- * Additional features
+ * Tree printing functions
  ************************************************************************/
 
 type branchObj struct {
