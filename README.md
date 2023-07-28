@@ -1,12 +1,11 @@
 # About GoMapLLRB [![Actions Status](https://github.com/wolkykim/gomapllrb/workflows/CI/badge.svg)](https://github.com/wolkykim/gomapllrb/actions)
 
 Package GoMapLLRB implements an in-memory key/value store using LLRB algorithm.
-LLRB (Left-Leaning Red-Black) is a self-balancing binary search tree that
-holds the keys in order which allows ordered iteration and find nearest keys.
+LLRB(Left-Leaning Red-Black) is a self-balancing binary search tree that
+keeps the keys in order, allowing ordered iteration and finding the nearest keys.
 
 This is a GoLang version of the C implementation in
 [qLibc](https://github.com/wolkykim/qlibc) library.
-
 
 # GoMapLLRB vs Build-in map
 
@@ -20,7 +19,7 @@ This is a GoLang version of the C implementation in
 
 # Usages
 
-### Simple
+### Simple Example (More examples in the unit test code)
 ```
 import (
     "github.com/wolkykim/gomapllrb"
@@ -57,7 +56,7 @@ for it := t.Range(3, 8); it.Next(); {
 3=30 5=50 7=70
 ```
 
-### Students on DSA course
+### And Tree Drawing Fun!!!
 ```
 fmt.Println(t, t.Stats())
 
@@ -73,20 +72,21 @@ Variant:LLRB234, Put:5, Delete:0, Get:16, Rotate:8.60, Flip:4.00
 # Performance 2-3-4 LLRB Vs. 2-3 LLRB
 
 For anyone curious, here's the performance test result between 2-3-4 LLRB and 2-3 LLRB.
-Tested on 2021 Apple M1 Pro 10-core MacBook. GoMapLLRB supports both 2-3-4 and 2-3 LLRB and ships by default to balance the tree structure in 2-3-4 variant.
+Tested on 2021 Apple M1 Pro 10-core MacBook. GoMapLLRB supports 2-3-4 and 2-3 LLRB and
+ships by default to balance the tree structure in the 2-3-4 variant.
 
-|                    | 2-3-4 LLRB | 2-3 LLRB   | | 2-3-4 LLRB | 2-3 LLRB   | | 2-3-4 LLRB | 2-3 LLRB   |
-| ------------------ | ---------: | ---------: |-| ---------: | ---------: |-| ---------: | ---------: |
-| Workload           | 1 million  | 1 million  | | 3 million  | 3 million  | | 10 million | 10 million |
-|                    |            |            | |            |            | |            |            |
-| Insert             |      602ms |      654ms | |     2838ms |     3185ms | |    13065ms |    13412ms |
-| Lookup             |      376ms |      391ms | |     1860ms |     1869ms | |     9480ms |    10647ms |
-| Delete             |      693ms |      702ms | |     3201ms |     3166ms | |    14199ms |    15594ms |
-|                    |            |            | |            |            | |            |            |
-| Rotations (Insert) |       1.08 |       1.19 | |       1.08 |       1.19 | |       1.08 |       1.19 |
-| Rotations (Delete) |      16.46 |      19.45 | |      17.43 |      21.77 | |      18.64 |      23.53 |
-| Flips (Insert)     |       0.57 |       0.75 | |       0.57 |       0.75 | |       0.57 |       0.75 |
-| Flips (Delete)     |       3.31 |      15.33 | |       3.44 |      17.42 | |       3.58 |      18.45 |
+|                | 2-3-4 LLRB | 2-3 LLRB   | | 2-3-4 LLRB | 2-3 LLRB   | | 2-3-4 LLRB | 2-3 LLRB   |
+| ---------------| ---------: | ---------: |-| ---------: | ---------: |-| ---------: | ---------: |
+| Workload       | 1 million  | 1 million  | | 3 million  | 3 million  | | 10 million | 10 million |
+|                |            |            | |            |            | |            |            |
+| Insert         |      602ms |      654ms | |     2838ms |     3185ms | |    13065ms |    13412ms |
+| Lookup         |      376ms |      391ms | |     1860ms |     1869ms | |     9480ms |    10647ms |
+| Delete         |      693ms |      702ms | |     3201ms |     3166ms | |    14199ms |    15594ms |
+|                |            |            | |            |            | |            |            |
+| Rotations(Ins) |       1.08 |       1.19 | |       1.08 |       1.19 | |       1.08 |       1.19 |
+| Rotations(Del) |      16.46 |      19.45 | |      17.43 |      21.77 | |      18.64 |      23.53 |
+| Flips(Ins)     |       0.57 |       0.75 | |       0.57 |       0.75 | |       0.57 |       0.75 |
+| Flips(Del)     |       3.31 |      15.33 | |       3.44 |      17.42 | |       3.58 |      18.45 |
 
 # Copyright
 
