@@ -297,9 +297,6 @@ type Iter[K constraints.Ordered] struct {
 }
 
 // Iter returns an iterator.
-// Consider using IterSafe() if new key insertions or deletions are expected by
-// another threads or itself during the iteration loop. In such case, the travel
-// could be incomplete and could skip visiting some keys.
 func (tree *Tree[K]) Iter() *Iter[K] {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -372,76 +369,6 @@ func (it *Iter[K]) Val() interface{} {
 		return nil
 	}
 	return it.last.data
-}
-
-/*************************************************************************
- * Safe Iterator
- ************************************************************************/
-
-// IterSafe is a thread-safe iterator.
-type IterSafe[K constraints.Ordered] struct {
-	tree *Tree[K]
-	cur  K    // cursor, start from
-	last K    // copy of key after next()
-	end  K    // end boundary if span is set
-	span bool // indicates the end boundary is set
-	done bool // indicates the iteration is complete
-}
-
-// IterSafe returns a safe iterator.
-// Safe iterator isn't get affected by data insertions and deletions by other threads or itself.
-// It guarantees to visit the next key with the current state of data at the time of Next() call.
-// But note that this iterator is slower than Iter().
-func (tree *Tree[K]) IterSafe() *IterSafe[K] {
-	it := &IterSafe[K]{
-		tree: tree,
-	}
-	if k, _, exist := tree.Min(); exist {
-		it.cur = k
-	} else {
-		it.done = true
-	}
-	return it
-}
-
-// RangeSafe returns a ranged safe iterator.
-func (tree *Tree[K]) RangeSafe(start, end K) *IterSafe[K] {
-	it := &IterSafe[K]{
-		tree: tree,
-		end:  end,
-		span: true,
-	}
-	var exist bool
-	if it.cur, _, exist = it.tree.EqualOrBigger(start); !exist {
-		it.done = true
-	}
-	return it
-}
-
-// Next travels the keys in the tree.
-func (it *IterSafe[K]) Next() bool {
-	if it.done {
-		return false
-	}
-	it.last = it.cur
-	var exist bool
-	if it.cur, _, exist = it.tree.Bigger(it.cur); !exist {
-		it.done = true
-	}
-	if !it.done && it.span && it.tree.isLess(it.end, it.cur) {
-		it.done = true
-	}
-	return true
-}
-
-// Key returns the key name.
-func (it *IterSafe[K]) Key() K {
-	return it.last
-}
-
-// Val returns the data of the key.
-func (it *IterSafe[K]) Val() interface{} {
-	return it.tree.Get(it.last)
 }
 
 /*************************************************************************

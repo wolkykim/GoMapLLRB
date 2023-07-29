@@ -86,15 +86,6 @@ func TestGrowhVisualInspection(t *testing.T) {
 		tree.Put(int(hash32(i)%1000), nil)
 	}
 	assertTreeCheck(t, tree, true)
-
-	for it := tree.Iter(); it.Next(); {
-		fmt.Printf("%d ", it.Key())
-	}
-	fmt.Println()
-	for it := tree.IterSafe(); it.Next(); {
-		fmt.Printf("%d ", it.Key())
-	}
-	fmt.Println()
 }
 
 func TestBasics(t *testing.T) {
@@ -267,50 +258,6 @@ func TestIter(t *testing.T) {
 	assert.False(it.Next())
 }
 
-func TestIterSafe(t *testing.T) {
-	title("Test IterSafe")
-	assert := assert.New(t)
-	tree := New[int]()
-
-	// test with empty table
-	it := tree.IterSafe()
-	assert.False(it.Next())
-	assert.Equal(0, it.Key())
-	assert.Nil(it.Val())
-	it = tree.RangeSafe(0, 0)
-	assert.False(it.Next())
-
-	// insert
-	for _, k := range []int{7, 1, 3, 9, 5} {
-		tree.Put(k, k)
-	}
-
-	it = tree.IterSafe()
-	assert.True(it.Next())
-	assert.Equal(1, it.Key())
-	assert.Equal(1, it.Val())
-	assert.True(it.Next())
-	assert.Equal(3, it.Key())
-	assert.True(it.Next())
-	assert.Equal(5, it.Key())
-	assert.True(it.Next())
-	assert.Equal(7, it.Key())
-	assert.True(it.Next())
-	assert.Equal(9, it.Key())
-	assert.False(it.Next())
-	assert.False(it.Next())
-
-	it = tree.RangeSafe(3, 8)
-	assert.True(it.Next())
-	assert.Equal(3, it.Key())
-	assert.Equal(3, it.Val())
-	assert.True(it.Next())
-	assert.Equal(5, it.Key())
-	assert.True(it.Next())
-	assert.Equal(7, it.Key())
-	assert.False(it.Next())
-}
-
 func TestMap(t *testing.T) {
 	title("Test Map()")
 	assert := assert.New(t)
@@ -467,7 +414,7 @@ func perfTest(t *testing.T, keys []uint32) {
 		}
 	}
 	stats := tree.Stats()
-	fmt.Printf("  Put %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Put %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 	assert.Less(0, tree.Len())
 	assertTreeCheck(t, tree, false)
 
@@ -478,23 +425,16 @@ func perfTest(t *testing.T, keys []uint32) {
 		tree.Exist(k)
 	}
 	stats = tree.Stats()
-	fmt.Printf("  Find %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Find %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 
 	// iterator
 	tree.ResetStats()
 	start = time.Now()
 	for it := tree.Iter(); it.Next(); {
+		// let it loop
 	}
 	stats = tree.Stats()
-	fmt.Printf("  Iter %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
-
-	// safe iterator
-	tree.ResetStats()
-	start = time.Now()
-	for it := tree.IterSafe(); it.Next(); {
-	}
-	stats = tree.Stats()
-	fmt.Printf("  ItertSafe %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Iter %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 
 	// delete
 	tree.ResetStats()
@@ -503,7 +443,7 @@ func perfTest(t *testing.T, keys []uint32) {
 		tree.Delete(k)
 	}
 	stats = tree.Stats()
-	fmt.Printf("  Delete %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Delete %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 	assert.Equal(0, tree.Len())
 	assertTreeCheck(t, tree, false)
 }
