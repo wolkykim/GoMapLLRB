@@ -272,10 +272,7 @@ func (s Stats) String() string {
 //	                descendant leaves contain the same number of black nodes.
 //	LLRB property:  3-nodes always lean to the left and 4-nodes are balanced.
 func (tree *Tree[K]) Check() error {
-	if tree == nil {
-		return nil
-	}
-	if err := checkRoot(tree); err != nil {
+	if err := checkRoot(tree.root); err != nil {
 		return err
 	}
 	if err := checkRed(tree.root); err != nil {
@@ -761,12 +758,8 @@ func fixNode[K constraints.Ordered](node *Node[K]) *Node[K] {
 
 // checkRoot verifies that root property of the red-black tree is satisfied.
 // Root property:  The root is black.
-func checkRoot[K constraints.Ordered](tree *Tree[K]) error {
-	if tree == nil {
-		return fmt.Errorf("nil tree object")
-	}
-
-	if isRed(tree.root) {
+func checkRoot[K constraints.Ordered](root *Node[K]) error {
+	if isRed(root) {
 		return fmt.Errorf("root property violation found")
 	}
 
@@ -779,10 +772,8 @@ func checkRed[K constraints.Ordered](node *Node[K]) error {
 		return nil
 	}
 
-	if isRed(node) {
-		if isRed(node.right) || isRed(node.left) {
-			return fmt.Errorf("red property violation found")
-		}
+	if isRed(node) && (isRed(node.right) || isRed(node.left)) {
+		return fmt.Errorf("red property violation found")
 	}
 	if err := checkRed(node.right); err != nil {
 		return err
