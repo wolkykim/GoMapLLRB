@@ -123,7 +123,7 @@ func (tree *Tree[K]) Exist(name K) bool {
 }
 
 // Min returns a min key and value
-func (tree *Tree[K]) Min(name K) (K, interface{}, bool) {
+func (tree *Tree[K]) Min() (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := findMin(tree.root); node != nil {
@@ -136,7 +136,7 @@ func (tree *Tree[K]) Min(name K) (K, interface{}, bool) {
 }
 
 // Max returns a max key and value
-func (tree *Tree[K]) Max(name K) (K, interface{}, bool) {
+func (tree *Tree[K]) Max() (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := findMax(tree.root); node != nil {
@@ -312,7 +312,7 @@ func (s Stats) String() string {
  * Iterator
  ************************************************************************/
 
-// Iterator
+// Iterator is a thread-safe iterator
 type It[K constraints.Ordered] struct {
 	tree  *Tree[K]
 	start K
@@ -324,28 +324,28 @@ type It[K constraints.Ordered] struct {
 	data interface{}
 }
 
-// Iter returns a iterator
+// Iter returns a thread-safe iterator
 func (tree *Tree[K]) Iter() *It[K] {
 	it := &It[K]{
 		tree: tree,
 	}
-	if node := findMin[K](tree.root); node != nil {
-		it.start = node.name
+	if k, _, exist := tree.Min(); exist {
+		it.start = k
 	} else {
 		it.done = true
 	}
 	return it
 }
 
-// Range returns a ranged iterator
+// Range returns a ranged thread-safe iterator
 func (tree *Tree[K]) Range(start, end K) *It[K] {
 	it := &It[K]{
 		tree: tree,
 		end:  end,
 		span: true,
 	}
-	if node := tree.bigger(tree.root, start, true); node != nil {
-		it.start = node.name
+	if start, _, exist := it.tree.EqualOrBigger(start); exist {
+		it.start = start
 	} else {
 		it.done = true
 	}
