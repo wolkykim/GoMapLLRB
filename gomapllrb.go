@@ -77,7 +77,7 @@ type PerfStats struct {
 // New creates a new tree for ya! Enjoy the trees!!!
 func New[K constraints.Ordered]() *Tree[K] {
 	return &Tree[K]{
-		isLess: isLess[K],
+		isLess: IsLess[K],
 	}
 }
 
@@ -364,7 +364,7 @@ func (it *It[K]) Next() bool {
 	if it.start, _, e = it.tree.Bigger(it.start); !e {
 		it.done = true
 	}
-	if !it.done && it.span && isLess(it.end, it.start) {
+	if !it.done && it.span && it.tree.isLess(it.end, it.start) {
 		it.done = true
 	}
 	return true
@@ -388,7 +388,7 @@ func (it *It[K]) Val() interface{} {
 type Comparator[K constraints.Ordered] func(a, b K) bool
 
 // Default generic comparator
-func isLess[K constraints.Ordered](a, b K) bool {
+func IsLess[K constraints.Ordered](a, b K) bool {
 	if a < b {
 		return true
 	}
