@@ -200,7 +200,7 @@ func TestGetters(t *testing.T) {
 	}
 
 	// test EqualOrBigger
-	for i, _ := range keys {
+	for i := range keys {
 		k, _, e := tree.EqualOrBigger(i*10 + 5)
 		assert.True(e)
 		assert.Equal((i+1)*10, k)
@@ -211,7 +211,7 @@ func TestGetters(t *testing.T) {
 	// test EqualOrSmaller
 	_, _, e = tree.EqualOrSmaller(5)
 	assert.False(e)
-	for i, _ := range keys {
+	for i := range keys {
 		k, _, e := tree.EqualOrSmaller((i+1)*10 + 5)
 		assert.True(e)
 		assert.Equal((i+1)*10, k)
