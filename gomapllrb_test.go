@@ -229,8 +229,8 @@ func TestIter(t *testing.T) {
 	assert.False(it.Next())
 }
 
-func TestIterFast(t *testing.T) {
-	title("Test IterFast")
+func TestIterSafe(t *testing.T) {
+	title("Test IterSafe")
 	assert := assert.New(t)
 
 	// insert
@@ -239,7 +239,7 @@ func TestIterFast(t *testing.T) {
 		tree.Put(k, nil)
 	}
 
-	it := tree.Iter()
+	it := tree.IterSafe()
 	assert.True(it.Next())
 	assert.Equal(1, it.Key())
 	assert.True(it.Next())
@@ -253,7 +253,7 @@ func TestIterFast(t *testing.T) {
 	assert.False(it.Next())
 	assert.False(it.Next())
 
-	it = tree.Range(3, 8)
+	it = tree.RangeSafe(3, 8)
 	assert.True(it.Next())
 	assert.Equal(3, it.Key())
 	assert.True(it.Next())
@@ -261,6 +261,21 @@ func TestIterFast(t *testing.T) {
 	assert.True(it.Next())
 	assert.Equal(7, it.Key())
 	assert.False(it.Next())
+}
+
+func TestMap(t *testing.T) {
+	title("Test Map()")
+	assert := assert.New(t)
+
+	tree := New[int]()
+	for _, k := range []int{7, 1, 3, 9, 5} {
+		tree.Put(k, k)
+	}
+	m := tree.Map()
+	assert.Equal(tree.Len(), len(m))
+	for _, k := range []int{7, 1, 3, 9, 5} {
+		assert.Equal(k, m[k])
+	}
 }
 
 func TestPerformanceRandom(t *testing.T) {

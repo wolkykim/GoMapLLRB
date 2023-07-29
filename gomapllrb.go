@@ -280,6 +280,15 @@ func (tree *Tree[K]) String() string {
 	return buf.String()
 }
 
+// Map returns the tree in a map
+func (tree *Tree[K]) Map() map[K]interface{} {
+	m := make(map[K]interface{}, tree.Len())
+	for it := tree.Iter(); it.Next(); {
+		m[it.Key()] = it.Val()
+	}
+	return m
+}
+
 // String returns a statistics data in a string
 func (s Stats) String() string {
 	variant := "234"
