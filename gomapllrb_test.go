@@ -115,6 +115,12 @@ func TestGetters(t *testing.T) {
 		tree.Put(k, k)
 	}
 
+	// test Min/Max
+	min, _, _ := tree.Min()
+	assert.Equal(10, min)
+	max, _, _ := tree.Max()
+	assert.Equal(80, max)
+
 	// test Bigger
 	for i := 0; i < len(keys)-1; i++ {
 		k, _, e := tree.Bigger((i + 1) * 10)
@@ -166,24 +172,35 @@ func TestGetters(t *testing.T) {
 
 func TestIterator(t *testing.T) {
 	title("Test Iterator")
+	assert := assert.New(t)
 
 	// insert
 	tree := New[int]()
 	for _, k := range []int{7, 1, 3, 9, 5} {
-		tree.Put(k, k*10)
+		tree.Put(k, nil)
 	}
 
-	for it := tree.Iter(); it.Next(); {
-		fmt.Printf("%d=%d ", it.Key(), it.Val())
-	}
-	fmt.Println("")
+	it := tree.Iter()
+	assert.True(it.Next())
+	assert.Equal(1, it.Key())
+	assert.True(it.Next())
+	assert.Equal(3, it.Key())
+	assert.True(it.Next())
+	assert.Equal(5, it.Key())
+	assert.True(it.Next())
+	assert.Equal(7, it.Key())
+	assert.True(it.Next())
+	assert.Equal(9, it.Key())
+	assert.False(it.Next())
 
-	for it := tree.Range(3, 8); it.Next(); {
-		fmt.Printf("%d=%d ", it.Key(), it.Val())
-	}
-	fmt.Println("")
-
-	fmt.Println(tree, tree.Stats())
+	it = tree.Range(3, 8)
+	assert.True(it.Next())
+	assert.Equal(3, it.Key())
+	assert.True(it.Next())
+	assert.Equal(5, it.Key())
+	assert.True(it.Next())
+	assert.Equal(7, it.Key())
+	assert.False(it.Next())
 }
 
 func TestPerformanceRandom(t *testing.T) {
