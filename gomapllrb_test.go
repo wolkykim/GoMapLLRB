@@ -105,6 +105,9 @@ func TestBasics(t *testing.T) {
 	tree := New[int]()
 	assert.Equal(0, tree.Len())
 
+	// Test SetLess()
+	tree.SetLess(tree.isLess)
+
 	// insert
 	for _, k := range keys {
 		tree.Put(k, k)
@@ -123,10 +126,13 @@ func TestBasics(t *testing.T) {
 
 	// delete
 	for _, k := range keys {
-		assert.NotNil(tree.Delete(k))
+		assert.True(tree.Delete(k))
 		assertTreeCheck(t, tree, false)
 	}
 	assert.Equal(0, tree.Len())
+
+	// delete not found
+	assert.False(tree.Delete(100))
 
 	// overwrite
 	tree.Put(1, 1)
@@ -233,12 +239,13 @@ func TestIter(t *testing.T) {
 
 	// insert
 	for _, k := range []int{7, 1, 3, 9, 5} {
-		tree.Put(k, nil)
+		tree.Put(k, k)
 	}
 
 	it = tree.Iter()
 	assert.True(it.Next())
 	assert.Equal(1, it.Key())
+	assert.Equal(1, it.Val())
 	assert.True(it.Next())
 	assert.Equal(3, it.Key())
 	assert.True(it.Next())
@@ -252,6 +259,7 @@ func TestIter(t *testing.T) {
 	it = tree.Range(3, 8)
 	assert.True(it.Next())
 	assert.Equal(3, it.Key())
+	assert.Equal(3, it.Val())
 	assert.True(it.Next())
 	assert.Equal(5, it.Key())
 	assert.True(it.Next())
@@ -267,17 +275,20 @@ func TestIterSafe(t *testing.T) {
 	// test with empty table
 	it := tree.IterSafe()
 	assert.False(it.Next())
+	assert.Equal(0, it.Key())
+	assert.Nil(it.Val())
 	it = tree.RangeSafe(0, 0)
 	assert.False(it.Next())
 
 	// insert
 	for _, k := range []int{7, 1, 3, 9, 5} {
-		tree.Put(k, nil)
+		tree.Put(k, k)
 	}
 
 	it = tree.IterSafe()
 	assert.True(it.Next())
 	assert.Equal(1, it.Key())
+	assert.Equal(1, it.Val())
 	assert.True(it.Next())
 	assert.Equal(3, it.Key())
 	assert.True(it.Next())
@@ -292,6 +303,7 @@ func TestIterSafe(t *testing.T) {
 	it = tree.RangeSafe(3, 8)
 	assert.True(it.Next())
 	assert.Equal(3, it.Key())
+	assert.Equal(3, it.Val())
 	assert.True(it.Next())
 	assert.Equal(5, it.Key())
 	assert.True(it.Next())
@@ -312,6 +324,76 @@ func TestMap(t *testing.T) {
 	for _, k := range []int{7, 1, 3, 9, 5} {
 		assert.Equal(k, m[k])
 	}
+}
+
+func TestCheck(t *testing.T) {
+	if !LLRB234 {
+		return
+	}
+	title("Test Check()")
+	assert := assert.New(t)
+
+	// 2-3-4 LLRB will balance them as below
+	//      ┌──[5]
+	//  ┌───4
+	//  │   └──[3]
+	//  2
+	//  └───1
+	tree := New[int]()
+	for _, k := range []int{1, 2, 3, 4, 5} {
+		tree.Put(k, nil)
+	}
+	assert.NoError(tree.Check())
+
+	tree.root.red = true
+	assert.ErrorContains(tree.Check(), "root property")
+	tree.root.red = false
+	assert.NoError(tree.Check())
+
+	tree.root.right.red = true
+	assert.ErrorContains(tree.Check(), "red property")
+	tree.root.right.red = false
+	assert.NoError(tree.Check())
+
+	tree.root.right.right.red = false
+	assert.ErrorContains(tree.Check(), "black property")
+	tree.root.right.right.red = true
+	assert.NoError(tree.Check())
+
+	n := tree.root.right.left
+	tree.root.right.left = nil
+	assert.ErrorContains(tree.Check(), "LLRB property")
+	tree.root.right.left = n
+	assert.NoError(tree.Check())
+
+	// Revere the balance
+	//
+	//  ┌───5
+	//  4
+	//  │   ┌──[3]
+	//  └───2
+	//      └──[1]
+	tree = New[int]()
+	for _, k := range []int{5, 4, 3, 2, 1} {
+		tree.Put(k, nil)
+	}
+	assert.NoError(tree.Check())
+
+	tree.root.left.red = true
+	assert.ErrorContains(tree.Check(), "red property")
+	tree.root.left.red = false
+	assert.NoError(tree.Check())
+
+	tree.root.left.right.red = false
+	assert.ErrorContains(tree.Check(), "black property")
+	tree.root.left.right.red = true
+	assert.NoError(tree.Check())
+
+	n = tree.root.left.left
+	tree.root.left.left = nil
+	assert.ErrorContains(tree.Check(), "LLRB property")
+	tree.root.left.left = n
+	assert.NoError(tree.Check())
 }
 
 func TestPerformanceRandom(t *testing.T) {
