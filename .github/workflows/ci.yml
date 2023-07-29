@@ -23,11 +23,10 @@ jobs:
 
       - name: Run Test
         run: |
-          go test -v ./...
+          go test ./...
 
-      - name: Code Coverage Report
-        uses: ncruces/go-coverage-report@v0
-        with:
-          report: 'true'
-          chart: 'false'
-          amend: 'false'
+      - name: Generate coverage report
+        uses: ncruces/go-coverage-report@v0.19
+        if: |
+          github.event_name == 'push'
+        continue-on-error: true
