@@ -12,6 +12,10 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+const (
+	VERBOSE = false // enable visual inspections
+)
+
 // Test growth of tree
 // Example taken from the inventor's presentation slide p24-p25.
 // https://sedgewick.io/wp-content/uploads/2022/03/2008-09LLRB.pdf
@@ -69,6 +73,28 @@ func TestGrowh(t *testing.T) {
 		tree.Delete(k)
 		assertTreeCheck(t, tree, false)
 	}
+}
+
+func TestGrowhVisualInspection(t *testing.T) {
+	if !VERBOSE {
+		return
+	}
+	title("Visual inspection")
+
+	tree := New[int]()
+	for i := 0; i < 100; i++ {
+		tree.Put(int(hash32(i)%1000), nil)
+	}
+	assertTreeCheck(t, tree, true)
+
+	for it := tree.Iter(); it.Next(); {
+		fmt.Printf("%d ", it.Key())
+	}
+	fmt.Println()
+	for it := tree.IterSafe(); it.Next(); {
+		fmt.Printf("%d ", it.Key())
+	}
+	fmt.Println()
 }
 
 func TestBasics(t *testing.T) {
@@ -170,8 +196,8 @@ func TestGetters(t *testing.T) {
 	}
 }
 
-func TestIterator(t *testing.T) {
-	title("Test Iterator")
+func TestIter(t *testing.T) {
+	title("Test Iter()")
 	assert := assert.New(t)
 
 	// insert
@@ -191,6 +217,40 @@ func TestIterator(t *testing.T) {
 	assert.Equal(7, it.Key())
 	assert.True(it.Next())
 	assert.Equal(9, it.Key())
+	assert.False(it.Next())
+
+	it = tree.Range(3, 8)
+	assert.True(it.Next())
+	assert.Equal(3, it.Key())
+	assert.True(it.Next())
+	assert.Equal(5, it.Key())
+	assert.True(it.Next())
+	assert.Equal(7, it.Key())
+	assert.False(it.Next())
+}
+
+func TestIterFast(t *testing.T) {
+	title("Test IterFast")
+	assert := assert.New(t)
+
+	// insert
+	tree := New[int]()
+	for _, k := range []int{7, 1, 3, 9, 5} {
+		tree.Put(k, nil)
+	}
+
+	it := tree.Iter()
+	assert.True(it.Next())
+	assert.Equal(1, it.Key())
+	assert.True(it.Next())
+	assert.Equal(3, it.Key())
+	assert.True(it.Next())
+	assert.Equal(5, it.Key())
+	assert.True(it.Next())
+	assert.Equal(7, it.Key())
+	assert.True(it.Next())
+	assert.Equal(9, it.Key())
+	assert.False(it.Next())
 	assert.False(it.Next())
 
 	it = tree.Range(3, 8)
@@ -267,11 +327,14 @@ func perfTest(t *testing.T, keys []uint32) {
 
 	// put
 	start := time.Now()
-	for _, k := range keys {
+	for i, k := range keys {
 		tree.Put(k, nil)
+		if VERBOSE && i == 50 {
+			assertTreeCheck(t, tree, true)
+		}
 	}
 	stats := tree.Stats()
-	fmt.Printf("  Put %d keys:    %vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Put %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 	assert.Less(0, tree.Len())
 	assertTreeCheck(t, tree, false)
 
@@ -282,7 +345,23 @@ func perfTest(t *testing.T, keys []uint32) {
 		tree.Exist(k)
 	}
 	stats = tree.Stats()
-	fmt.Printf("  Find %d keys:   %vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Find %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+
+	// iterator
+	tree.ResetStats()
+	start = time.Now()
+	for it := tree.Iter(); it.Next(); {
+	}
+	stats = tree.Stats()
+	fmt.Printf("  Iter %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+
+	// safe iterator
+	tree.ResetStats()
+	start = time.Now()
+	for it := tree.IterSafe(); it.Next(); {
+	}
+	stats = tree.Stats()
+	fmt.Printf("  ItertSafe %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 
 	// delete
 	tree.ResetStats()
@@ -291,7 +370,7 @@ func perfTest(t *testing.T, keys []uint32) {
 		tree.Delete(k)
 	}
 	stats = tree.Stats()
-	fmt.Printf("  Delete %d keys: %vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
+	fmt.Printf("  Delete %d keys:\t\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
 	assert.Equal(0, tree.Len())
 	assertTreeCheck(t, tree, false)
 }

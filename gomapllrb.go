@@ -127,10 +127,8 @@ func (tree *Tree[K]) Min() (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := findMin(tree.root); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -140,10 +138,8 @@ func (tree *Tree[K]) Max() (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := findMax(tree.root); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -153,10 +149,8 @@ func (tree *Tree[K]) Bigger(name K) (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := tree.bigger(tree.root, name, false); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -166,10 +160,8 @@ func (tree *Tree[K]) Smaller(name K) (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := tree.smaller(tree.root, name, false); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -179,10 +171,8 @@ func (tree *Tree[K]) EqualOrBigger(name K) (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := tree.bigger(tree.root, name, true); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -192,10 +182,8 @@ func (tree *Tree[K]) EqualOrSmaller(name K) (K, interface{}, bool) {
 	tree.Lock()
 	defer tree.Unlock()
 	if node := tree.smaller(tree.root, name, true); node != nil {
-		tree.stats.Get.Found++
 		return node.name, node.data, true
 	}
-	tree.stats.Get.NotFound++
 	var n K
 	return n, nil, false
 }
@@ -233,12 +221,9 @@ func (tree *Tree[K]) Check() error {
 	if tree == nil {
 		return nil
 	}
-
-	/*
-		if err := checkRoot(tree); err != nil {
-			return err
-		}
-	*/
+	if err := checkRoot(tree); err != nil {
+		return err
+	}
 	if err := checkRed(tree.root); err != nil {
 		return err
 	}
@@ -312,72 +297,164 @@ func (s Stats) String() string {
  * Iterator
  ************************************************************************/
 
-// Iterator is a thread-safe iterator
-type It[K constraints.Ordered] struct {
-	tree  *Tree[K]
-	start K
-	end   K
-	span  bool
-	done  bool
-
-	name K
-	data interface{}
+// Iter is a iterator object
+type Iter[K constraints.Ordered] struct {
+	tree *Tree[K]
+	cur  *Node[K] // cursor, start from
+	last *Node[K] // last node pointer after next()
+	end  K        // end boundary is span is set
+	span bool     // indicates the end boundary is set
+	done bool     // indicates the iteration is complete
 }
 
-// Iter returns a thread-safe iterator
-func (tree *Tree[K]) Iter() *It[K] {
-	it := &It[K]{
+// Iter returns an iterator
+// Consider using IterSafe() if new key insertions or deletions are expected by
+// another threads or itself during the iteration loop. In such case, the travel
+// could be incomplete and could skip visiting some keys.
+func (tree *Tree[K]) Iter() *Iter[K] {
+	tree.Lock()
+	defer tree.Unlock()
+	it := &Iter[K]{
 		tree: tree,
+		cur:  findMin(tree.root),
 	}
-	if k, _, exist := tree.Min(); exist {
-		it.start = k
-	} else {
+	if it.cur == nil {
 		it.done = true
 	}
 	return it
 }
 
-// Range returns a ranged thread-safe iterator
-func (tree *Tree[K]) Range(start, end K) *It[K] {
-	it := &It[K]{
+// Range returns a ranged iterator
+func (tree *Tree[K]) Range(start, end K) *Iter[K] {
+	tree.Lock()
+	defer tree.Unlock()
+	it := &Iter[K]{
 		tree: tree,
+		cur:  tree.bigger(tree.root, start, true),
 		end:  end,
 		span: true,
 	}
-	if start, _, exist := it.tree.EqualOrBigger(start); exist {
-		it.start = start
-	} else {
+	if it.cur == nil {
 		it.done = true
 	}
 	return it
 }
 
 // Next() iterates the tree
-func (it *It[K]) Next() bool {
+func (it *Iter[K]) Next() bool {
 	if it.done {
 		return false
 	}
+	it.last = it.cur
+	it.tree.Lock()
+	defer it.tree.Unlock()
+	if it.cur = it.tree.bigger(it.cur.right, it.cur.name, false); it.cur == nil {
+		it.cur = it.last.up
+		// go up until bigger value found
+		for it.cur != nil && it.tree.isLess(it.cur.name, it.last.name) {
+			it.cur = it.cur.up
+		}
+		// go down again
+		if it.cur != nil {
+			it.cur = it.tree.bigger(it.cur, it.last.name, false)
+		}
+		if it.cur == nil {
+			it.done = true
+		} else {
 
-	it.name = it.start
-	it.data = it.tree.Get(it.name)
-	var e bool
-	if it.start, _, e = it.tree.Bigger(it.start); !e {
-		it.done = true
+		}
 	}
-	if !it.done && it.span && it.tree.isLess(it.end, it.start) {
+	if !it.done && it.span && it.tree.isLess(it.end, it.cur.name) {
 		it.done = true
 	}
 	return true
 }
 
 // Key returns the key name
-func (it *It[K]) Key() K {
-	return it.name
+func (it *Iter[K]) Key() K {
+	if it.last == nil {
+		var k K
+		return k
+	}
+	return it.last.name
 }
 
 // Val returns the value data
-func (it *It[K]) Val() interface{} {
-	return it.data
+func (it *Iter[K]) Val() interface{} {
+	if it.last == nil {
+		return nil
+	}
+	return it.last.data
+}
+
+/*************************************************************************
+ * Safe Iterator
+ ************************************************************************/
+
+// It is a thread-safe iterator.
+type IterSafe[K constraints.Ordered] struct {
+	tree *Tree[K]
+	cur  K    // cursor, start from
+	last K    // copy of key after next()
+	end  K    // end boundary if span is set
+	span bool // indicates the end boundary is set
+	done bool // indicates the iteration is complete
+}
+
+// Iter returns a safe iterator.
+// Safe iterator isn't get affected by data insertions and deletions by other threads or itself.
+// It guarantees to visit the next key with the current state of data at the time of Next() call.
+// But note that this iterator is slower than Iter().
+func (tree *Tree[K]) IterSafe() *IterSafe[K] {
+	it := &IterSafe[K]{
+		tree: tree,
+	}
+	if k, _, exist := tree.Min(); exist {
+		it.cur = k
+	} else {
+		it.done = true
+	}
+	return it
+}
+
+// Range returns a ranged safe iterator
+func (tree *Tree[K]) RangeSafe(start, end K) *IterSafe[K] {
+	it := &IterSafe[K]{
+		tree: tree,
+		end:  end,
+		span: true,
+	}
+	var exist bool
+	if it.cur, _, exist = it.tree.EqualOrBigger(start); !exist {
+		it.done = true
+	}
+	return it
+}
+
+// Next() iterates the tree
+func (it *IterSafe[K]) Next() bool {
+	if it.done {
+		return false
+	}
+	it.last = it.cur
+	var exist bool
+	if it.cur, _, exist = it.tree.Bigger(it.cur); !exist {
+		it.done = true
+	}
+	if !it.done && it.span && it.tree.isLess(it.end, it.cur) {
+		it.done = true
+	}
+	return true
+}
+
+// Key returns the key name
+func (it *IterSafe[K]) Key() K {
+	return it.last
+}
+
+// Val returns the data of the key
+func (it *IterSafe[K]) Val() interface{} {
+	return it.tree.Get(it.last)
 }
 
 /*************************************************************************
@@ -492,6 +569,7 @@ func (tree *Tree[K]) delete(node *Node[K], name K) (*Node[K], bool) {
 }
 
 func (tree *Tree[K]) get(node *Node[K], name K) *Node[K] {
+	// do linear search for performance
 	for node != nil {
 		if tree.isLess(name, node.name) {
 			node = node.left

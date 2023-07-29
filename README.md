@@ -56,7 +56,7 @@ for it := t.Range(3, 8); it.Next(); {
 3=30 5=50 7=70
 ```
 
-### And Tree Drawing Fun!!!
+### Students on DSA course
 ```
 fmt.Println(t, t.Stats())
 
