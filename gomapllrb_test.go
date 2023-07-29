@@ -127,6 +127,18 @@ func TestBasics(t *testing.T) {
 		assertTreeCheck(t, tree, false)
 	}
 	assert.Equal(0, tree.Len())
+
+	// overwrite
+	tree.Put(1, 1)
+	assert.Equal(1, tree.Get(1))
+	assert.Equal(1, tree.Len())
+	tree.Put(1, 10)
+	assert.Equal(10, tree.Get(1))
+	assert.Equal(1, tree.Len())
+
+	// clear
+	tree.Clear()
+	assert.Equal(0, tree.Len())
 }
 
 func TestGetters(t *testing.T) {
@@ -136,10 +148,20 @@ func TestGetters(t *testing.T) {
 	keys := []int{10, 20, 30, 40, 50, 60, 70, 80}
 	tree := New[int]()
 
+	// test empty table
+	_, _, e := tree.Min()
+	assert.False(e)
+	_, _, e = tree.Max()
+	assert.False(e)
+
 	// insert
 	for _, k := range keys {
 		tree.Put(k, k)
 	}
+
+	// test Exist()
+	assert.True(tree.Exist(10))
+	assert.False(tree.Exist(0))
 
 	// test Min/Max
 	min, _, _ := tree.Min()
@@ -153,7 +175,7 @@ func TestGetters(t *testing.T) {
 		assert.True(e)
 		assert.Equal((i+2)*10, k)
 	}
-	_, _, e := tree.Bigger(80)
+	_, _, e = tree.Bigger(80)
 	assert.False(e)
 
 	// test Smaller
@@ -199,14 +221,22 @@ func TestGetters(t *testing.T) {
 func TestIter(t *testing.T) {
 	title("Test Iter()")
 	assert := assert.New(t)
+	tree := New[int]()
+
+	// test with empty table
+	it := tree.Iter()
+	assert.False(it.Next())
+	assert.Equal(0, it.Key())
+	assert.Nil(it.Val())
+	it = tree.Range(0, 0)
+	assert.False(it.Next())
 
 	// insert
-	tree := New[int]()
 	for _, k := range []int{7, 1, 3, 9, 5} {
 		tree.Put(k, nil)
 	}
 
-	it := tree.Iter()
+	it = tree.Iter()
 	assert.True(it.Next())
 	assert.Equal(1, it.Key())
 	assert.True(it.Next())
@@ -232,14 +262,20 @@ func TestIter(t *testing.T) {
 func TestIterSafe(t *testing.T) {
 	title("Test IterSafe")
 	assert := assert.New(t)
+	tree := New[int]()
+
+	// test with empty table
+	it := tree.IterSafe()
+	assert.False(it.Next())
+	it = tree.RangeSafe(0, 0)
+	assert.False(it.Next())
 
 	// insert
-	tree := New[int]()
 	for _, k := range []int{7, 1, 3, 9, 5} {
 		tree.Put(k, nil)
 	}
 
-	it := tree.IterSafe()
+	it = tree.IterSafe()
 	assert.True(it.Next())
 	assert.Equal(1, it.Key())
 	assert.True(it.Next())
