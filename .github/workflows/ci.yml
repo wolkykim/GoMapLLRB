@@ -22,6 +22,7 @@ jobs:
       - name: Run Test
         run: make test
   report:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
