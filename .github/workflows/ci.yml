@@ -13,19 +13,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Setup Go
+      - name: Setup build environment
         uses: actions/setup-go@v4
         with:
           go-version: '1.20'
+      - name: Git checkout repository
+        uses: actions/checkout@v3
       - name: Run Test
         run: make test
   report:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Git checkout repository
         uses: actions/checkout@v3
       - name: Generate coverage report
         uses: ncruces/go-coverage-report@v0.1.9
