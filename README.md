@@ -37,7 +37,7 @@ Hello World
 ```
 [[Play the code](https://go.dev/play/p/tNWjKykUgwT)]
 
-Other getter methods: Exist(), GetMin(), GetMax(), Bigger(), Smaller(), EqualOrBigger(), EqualOrSmaller(), ...
+Other getter methods: Exist(), Min(), Max(), Bigger(), Smaller(), EqualOrBigger(), EqualOrSmaller(), ...
 See [API documents](https://pkg.go.dev/github.com/wolkykim/gomapllrb#section-documentation) for details.
 
 ### Iteration
