@@ -1,4 +1,4 @@
-// Package GoMapLLRB implements an in-memory key/value store using LLRB algorithm.
+// Package gomapllrb implements an in-memory key/value store using LLRB algorithm.
 // LLRB (Left-Leaning Red-Black) is a self-balancing binary search tree that
 // stores the keys in order which allows ordered iteration and find nearest keys.
 //
@@ -15,12 +15,11 @@ import (
 )
 
 const (
-	// GoMapLLRB supports both 2-3-4 and 2-3 variants for anyone curious.
-	// This changes the characteristics of the self-balancing properties.
+	// LLRB234 sets the tree management property and algorithm.
 	LLRB234 = true // true: 2-3-4 varian(default), false: 2-3 variant
 )
 
-// Tree is the glorious tree struct
+// Tree is the glorious tree struct.
 type Tree[K constraints.Ordered] struct {
 	isLess Comparator[K] // data comparator (default: string comparator)
 
@@ -31,7 +30,7 @@ type Tree[K constraints.Ordered] struct {
 	stats Stats // usage and performance metrics
 }
 
-// Node is like an apple on the apple trees
+// Node is like an apple on the apple trees.
 type Node[K constraints.Ordered] struct {
 	name K
 	data interface{}
@@ -40,11 +39,9 @@ type Node[K constraints.Ordered] struct {
 	up    *Node[K]
 	left  *Node[K]
 	right *Node[K]
-
-	tid uint8 // used in iterator
 }
 
-// Stats provides usage statistics accessible via Stats() method
+// Stats provides usage statistics accessible via Stats() method.
 type Stats struct {
 	Put struct {
 		Sum    uint64
@@ -64,7 +61,7 @@ type Stats struct {
 	Perf PerfStats
 }
 
-// PerfStats are global stats for debugging purpose
+// PerfStats are global stats for debugging purpose.
 type PerfStats struct {
 	Flip   uint64
 	Rotate struct {
@@ -74,14 +71,14 @@ type PerfStats struct {
 	}
 }
 
-// New creates a new tree for ya! Enjoy the trees!!!
+// New creates a new tree.
 func New[K constraints.Ordered]() *Tree[K] {
 	return &Tree[K]{
 		isLess: IsLess[K],
 	}
 }
 
-// SetLess sets a user comparator function
+// SetLess sets a user comparator function.
 //
 //	func myLess[K constraints.Ordered](a, b K) bool {
 //	  // return true if a < b, or false
@@ -90,7 +87,7 @@ func (tree *Tree[K]) SetLess(fn Comparator[K]) {
 	tree.isLess = fn
 }
 
-// Put inserts a new key or replaces old if the same key is found
+// Put inserts a new key or replaces old if the same key is found.
 func (tree *Tree[K]) Put(name K, data interface{}) {
 	tree.mutex.Lock()
 	defer tree.mutex.Unlock()
@@ -111,7 +108,7 @@ func (tree *Tree[K]) Delete(name K) bool {
 }
 
 // Get returns the value of the key. If key is not found, it returns Nil.
-// When Nil value is expected as a actual value, use Exist() instead
+// When Nil value is expected as a actual value, use Exist() instead.
 func (tree *Tree[K]) Get(name K) interface{} {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -131,7 +128,7 @@ func (tree *Tree[K]) Exist(name K) bool {
 	return false
 }
 
-// Min returns a min key and value
+// Min returns a min key and value.
 func (tree *Tree[K]) Min() (K, interface{}, bool) {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -142,7 +139,7 @@ func (tree *Tree[K]) Min() (K, interface{}, bool) {
 	return n, nil, false
 }
 
-// Max returns a max key and value
+// Max returns a max key and value.
 func (tree *Tree[K]) Max() (K, interface{}, bool) {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -153,7 +150,7 @@ func (tree *Tree[K]) Max() (K, interface{}, bool) {
 	return n, nil, false
 }
 
-// Bigger finds the next key bigger than given ken
+// Bigger finds the next key bigger than given ken.
 func (tree *Tree[K]) Bigger(name K) (K, interface{}, bool) {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -164,7 +161,7 @@ func (tree *Tree[K]) Bigger(name K) (K, interface{}, bool) {
 	return n, nil, false
 }
 
-// Smaller finds the next key bigger than given ken
+// Smaller finds the next key bigger than given ken.
 func (tree *Tree[K]) Smaller(name K) (K, interface{}, bool) {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -197,7 +194,7 @@ func (tree *Tree[K]) EqualOrSmaller(name K) (K, interface{}, bool) {
 	return n, nil, false
 }
 
-// Clear empties the tree without resetting the statistic metrics
+// Clear empties the tree without resetting the statistic metrics.
 func (tree *Tree[K]) Clear() {
 	tree.mutex.Lock()
 	defer tree.mutex.Unlock()
@@ -205,12 +202,12 @@ func (tree *Tree[K]) Clear() {
 	tree.len = 0
 }
 
-// Len returns the number of object stored
+// Len returns the number of object stored.
 func (tree *Tree[K]) Len() int {
 	return tree.len
 }
 
-// Stats returns a copy of the statistics metrics
+// Stats returns a copy of the statistics metrics.
 func (tree *Tree[K]) Stats() Stats {
 	tree.stats.Put.Sum = tree.stats.Put.New + tree.stats.Put.Update
 	tree.stats.Get.Sum = tree.stats.Get.Found + tree.stats.Get.NotFound
@@ -220,7 +217,7 @@ func (tree *Tree[K]) Stats() Stats {
 	return tree.stats
 }
 
-// ResetStats resets all the satistics metrics
+// ResetStats resets all the satistics metrics.
 func (tree *Tree[K]) ResetStats() {
 	tree.stats = Stats{}
 	pstats = PerfStats{}
@@ -251,7 +248,7 @@ func (tree *Tree[K]) Map() map[K]interface{} {
 	return m
 }
 
-// String returns a statistics data in a string
+// String returns a statistics data in a string.
 func (s Stats) String() string {
 	variant := "234"
 	if !LLRB234 {
@@ -278,22 +275,18 @@ func (tree *Tree[K]) Check() error {
 	if err := checkRed(tree.root); err != nil {
 		return err
 	}
-	len := 0
-	if err := checkBlack(tree.root, &len); err != nil {
+	length := 0
+	if err := checkBlack(tree.root, &length); err != nil {
 		return err
 	}
-	if err := checkLLRB(tree.root); err != nil {
-		return err
-	}
-
-	return nil
+	return checkLLRB(tree.root)
 }
 
 /*************************************************************************
  * Iterator
  ************************************************************************/
 
-// Iter is a iterator object
+// Iter is a iterator object.
 type Iter[K constraints.Ordered] struct {
 	tree *Tree[K]
 	cur  *Node[K] // cursor, start from
@@ -303,7 +296,7 @@ type Iter[K constraints.Ordered] struct {
 	done bool     // indicates the iteration is complete
 }
 
-// Iter returns an iterator
+// Iter returns an iterator.
 // Consider using IterSafe() if new key insertions or deletions are expected by
 // another threads or itself during the iteration loop. In such case, the travel
 // could be incomplete and could skip visiting some keys.
@@ -320,7 +313,7 @@ func (tree *Tree[K]) Iter() *Iter[K] {
 	return it
 }
 
-// Range returns a ranged iterator
+// Range returns a ranged iterator.
 func (tree *Tree[K]) Range(start, end K) *Iter[K] {
 	tree.mutex.RLock()
 	defer tree.mutex.RUnlock()
@@ -336,7 +329,7 @@ func (tree *Tree[K]) Range(start, end K) *Iter[K] {
 	return it
 }
 
-// Next() iterates the tree
+// Next travels the keys in the tree.
 func (it *Iter[K]) Next() bool {
 	if it.done {
 		return false
@@ -356,8 +349,6 @@ func (it *Iter[K]) Next() bool {
 		}
 		if it.cur == nil {
 			it.done = true
-		} else {
-
 		}
 	}
 	if !it.done && it.span && it.tree.isLess(it.end, it.cur.name) {
@@ -366,7 +357,7 @@ func (it *Iter[K]) Next() bool {
 	return true
 }
 
-// Key returns the key name
+// Key returns the key name.
 func (it *Iter[K]) Key() K {
 	if it.last == nil {
 		var k K
@@ -375,7 +366,7 @@ func (it *Iter[K]) Key() K {
 	return it.last.name
 }
 
-// Val returns the value data
+// Val returns the value data.
 func (it *Iter[K]) Val() interface{} {
 	if it.last == nil {
 		return nil
@@ -387,7 +378,7 @@ func (it *Iter[K]) Val() interface{} {
  * Safe Iterator
  ************************************************************************/
 
-// It is a thread-safe iterator.
+// IterSafe is a thread-safe iterator.
 type IterSafe[K constraints.Ordered] struct {
 	tree *Tree[K]
 	cur  K    // cursor, start from
@@ -397,7 +388,7 @@ type IterSafe[K constraints.Ordered] struct {
 	done bool // indicates the iteration is complete
 }
 
-// Iter returns a safe iterator.
+// IterSafe returns a safe iterator.
 // Safe iterator isn't get affected by data insertions and deletions by other threads or itself.
 // It guarantees to visit the next key with the current state of data at the time of Next() call.
 // But note that this iterator is slower than Iter().
@@ -413,7 +404,7 @@ func (tree *Tree[K]) IterSafe() *IterSafe[K] {
 	return it
 }
 
-// Range returns a ranged safe iterator
+// RangeSafe returns a ranged safe iterator.
 func (tree *Tree[K]) RangeSafe(start, end K) *IterSafe[K] {
 	it := &IterSafe[K]{
 		tree: tree,
@@ -427,7 +418,7 @@ func (tree *Tree[K]) RangeSafe(start, end K) *IterSafe[K] {
 	return it
 }
 
-// Next() iterates the tree
+// Next travels the keys in the tree.
 func (it *IterSafe[K]) Next() bool {
 	if it.done {
 		return false
@@ -443,12 +434,12 @@ func (it *IterSafe[K]) Next() bool {
 	return true
 }
 
-// Key returns the key name
+// Key returns the key name.
 func (it *IterSafe[K]) Key() K {
 	return it.last
 }
 
-// Val returns the data of the key
+// Val returns the data of the key.
 func (it *IterSafe[K]) Val() interface{} {
 	return it.tree.Get(it.last)
 }
@@ -457,15 +448,12 @@ func (it *IterSafe[K]) Val() interface{} {
  * Default comparators
  ************************************************************************/
 
-// Our comparator prototype
+// Comparator is the type.
 type Comparator[K constraints.Ordered] func(a, b K) bool
 
-// Default generic comparator
+// IsLess is the default comparator.
 func IsLess[K constraints.Ordered](a, b K) bool {
-	if a < b {
-		return true
-	}
-	return false
+	return a < b
 }
 
 /*************************************************************************
@@ -757,7 +745,6 @@ func fixNode[K constraints.Ordered](node *Node[K]) *Node[K] {
  ************************************************************************/
 
 // checkRoot verifies that root property of the red-black tree is satisfied.
-// Root property:  The root is black.
 func checkRoot[K constraints.Ordered](root *Node[K]) error {
 	if isRed(root) {
 		return fmt.Errorf("root property violation found")
@@ -778,38 +765,33 @@ func checkRed[K constraints.Ordered](node *Node[K]) error {
 	if err := checkRed(node.right); err != nil {
 		return err
 	}
-	if err := checkRed(node.left); err != nil {
-		return err
-	}
-
-	return nil
+	return checkRed(node.left)
 }
 
 // checkBlack verifies that black property of the red-black tree is satisfied.
-func checkBlack[K constraints.Ordered](node *Node[K], len *int) error {
+func checkBlack[K constraints.Ordered](node *Node[K], length *int) error {
 	if node == nil {
-		*len = 1
+		*length = 1
 		return nil
 	}
 
-	var rightLen int
-	if err := checkBlack(node.right, &rightLen); err != nil {
+	var rightLength int
+	if err := checkBlack(node.right, &rightLength); err != nil {
 		return err
 	}
-	var leftLen int
-	if err := checkBlack(node.left, &leftLen); err != nil {
+	var leftLength int
+	if err := checkBlack(node.left, &leftLength); err != nil {
 		return err
 	}
 
-	if rightLen != leftLen {
+	if rightLength != leftLength {
 		return fmt.Errorf("black property violation found")
 	}
 	if !isRed(node) {
-		*len = rightLen + 1
+		*length = rightLength + 1
 	} else {
-		*len = rightLen
+		*length = rightLength
 	}
-
 	return nil
 }
 
@@ -822,15 +804,10 @@ func checkLLRB[K constraints.Ordered](node *Node[K]) error {
 	if isRed(node.right) && !isRed(node.left) {
 		return fmt.Errorf("LLRB property violation found")
 	}
-
 	if err := checkLLRB(node.right); err != nil {
 		return err
 	}
-	if err := checkLLRB(node.left); err != nil {
-		return err
-	}
-
-	return nil
+	return checkLLRB(node.left)
 }
 
 /*************************************************************************
