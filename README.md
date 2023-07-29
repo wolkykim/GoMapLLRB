@@ -21,9 +21,7 @@ This is a GoLang version of the C implementation in
 
 ### Simple Example (More examples in the unit test code)
 ```
-import (
-    "github.com/wolkykim/gomapllrb"
-)
+import "github.com/wolkykim/gomapllrb"
 
 t := gomapllrb.New[string]()
 t.Put("foo", "Hello World")
