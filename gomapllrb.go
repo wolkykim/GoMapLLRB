@@ -24,9 +24,9 @@ const (
 type Tree[K constraints.Ordered] struct {
 	isLess Comparator[K] // data comparator (default: string comparator)
 
-	root  *Node[K] // root node
-	len   int      // number of object stored
-	mutex sync.Mutex
+	root  *Node[K]     // root node
+	len   int          // number of object stored
+	mutex sync.RWMutex // reader/writer mutual exclusion lock
 
 	stats Stats // usage and performance metrics
 }
@@ -81,18 +81,27 @@ func New[K constraints.Ordered]() *Tree[K] {
 	}
 }
 
+// SetLess sets a user comparator function
+//
+//	func myLess[K constraints.Ordered](a, b K) bool {
+//	  // return true if a < b, or false
+//	}
+func (tree *Tree[K]) SetLess(fn Comparator[K]) {
+	tree.isLess = fn
+}
+
 // Put inserts a new key or replaces old if the same key is found
 func (tree *Tree[K]) Put(name K, data interface{}) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.Lock()
+	defer tree.mutex.Unlock()
 	tree.root = tree.put(tree.root, name, data)
 	tree.root.red = false
 }
 
 // Delete deletes the key. It returns an error if the key is not found.
 func (tree *Tree[K]) Delete(name K) bool {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.Lock()
+	defer tree.mutex.Unlock()
 	var deleted bool
 	tree.root, deleted = tree.delete(tree.root, name)
 	if tree.root != nil {
@@ -104,8 +113,8 @@ func (tree *Tree[K]) Delete(name K) bool {
 // Get returns the value of the key. If key is not found, it returns Nil.
 // When Nil value is expected as a actual value, use Exist() instead
 func (tree *Tree[K]) Get(name K) interface{} {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.get(tree.root, name); node != nil {
 		return node.data
 	}
@@ -114,8 +123,8 @@ func (tree *Tree[K]) Get(name K) interface{} {
 
 // Exist checks if the key exists.
 func (tree *Tree[K]) Exist(name K) bool {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.get(tree.root, name); node != nil {
 		return true
 	}
@@ -124,8 +133,8 @@ func (tree *Tree[K]) Exist(name K) bool {
 
 // Min returns a min key and value
 func (tree *Tree[K]) Min() (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := findMin(tree.root); node != nil {
 		return node.name, node.data, true
 	}
@@ -135,8 +144,8 @@ func (tree *Tree[K]) Min() (K, interface{}, bool) {
 
 // Max returns a max key and value
 func (tree *Tree[K]) Max() (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := findMax(tree.root); node != nil {
 		return node.name, node.data, true
 	}
@@ -146,8 +155,8 @@ func (tree *Tree[K]) Max() (K, interface{}, bool) {
 
 // Bigger finds the next key bigger than given ken
 func (tree *Tree[K]) Bigger(name K) (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.bigger(tree.root, name, false); node != nil {
 		return node.name, node.data, true
 	}
@@ -157,8 +166,8 @@ func (tree *Tree[K]) Bigger(name K) (K, interface{}, bool) {
 
 // Smaller finds the next key bigger than given ken
 func (tree *Tree[K]) Smaller(name K) (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.smaller(tree.root, name, false); node != nil {
 		return node.name, node.data, true
 	}
@@ -168,8 +177,8 @@ func (tree *Tree[K]) Smaller(name K) (K, interface{}, bool) {
 
 // EqualOrBigger finds a matching key or the next bigger key.
 func (tree *Tree[K]) EqualOrBigger(name K) (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.bigger(tree.root, name, true); node != nil {
 		return node.name, node.data, true
 	}
@@ -179,8 +188,8 @@ func (tree *Tree[K]) EqualOrBigger(name K) (K, interface{}, bool) {
 
 // EqualOrSmaller finds a matching key or the next smaller key.
 func (tree *Tree[K]) EqualOrSmaller(name K) (K, interface{}, bool) {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	if node := tree.smaller(tree.root, name, true); node != nil {
 		return node.name, node.data, true
 	}
@@ -188,26 +197,71 @@ func (tree *Tree[K]) EqualOrSmaller(name K) (K, interface{}, bool) {
 	return n, nil, false
 }
 
+// Clear empties the tree without resetting the statistic metrics
+func (tree *Tree[K]) Clear() {
+	tree.mutex.Lock()
+	defer tree.mutex.Unlock()
+	tree.root = nil
+	tree.len = 0
+}
+
 // Len returns the number of object stored
 func (tree *Tree[K]) Len() int {
 	return tree.len
 }
 
-// SetLess sets a user comparator function
-//
-//	func myLess[K constraints.Ordered](a, b K) bool {
-//	  // return true if a < b, or false
-//	}
-func (tree *Tree[K]) SetLess(fn Comparator[K]) {
-	tree.isLess = fn
+// Stats returns a copy of the statistics metrics
+func (tree *Tree[K]) Stats() Stats {
+	tree.stats.Put.Sum = tree.stats.Put.New + tree.stats.Put.Update
+	tree.stats.Get.Sum = tree.stats.Get.Found + tree.stats.Get.NotFound
+	tree.stats.Delete.Sum = tree.stats.Delete.Deleted + tree.stats.Delete.NotFound
+	tree.stats.Perf = pstats
+	tree.stats.Perf.Rotate.Sum = tree.stats.Perf.Rotate.Left + tree.stats.Perf.Rotate.Right
+	return tree.stats
 }
 
-// Clear empties the tree without resetting the statistic metrics
-func (tree *Tree[K]) Clear() {
-	tree.Lock()
-	defer tree.Unlock()
-	tree.root = nil
-	tree.len = 0
+// ResetStats resets all the satistics metrics
+func (tree *Tree[K]) ResetStats() {
+	tree.stats = Stats{}
+	pstats = PerfStats{}
+}
+
+// String returns a pretty drawing of the tree structure.
+//
+//	┌── 6
+//	|   └──[5]
+//	4
+//	│   ┌── 3
+//	└──[2]
+//	    └── 1
+func (tree *Tree[K]) String() string {
+	var buf bytes.Buffer
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
+	printNode(tree.root, &buf, nil, false)
+	return buf.String()
+}
+
+// Map returns the tree in a map
+func (tree *Tree[K]) Map() map[K]interface{} {
+	m := make(map[K]interface{}, tree.Len())
+	for it := tree.Iter(); it.Next(); {
+		m[it.Key()] = it.Val()
+	}
+	return m
+}
+
+// String returns a statistics data in a string
+func (s Stats) String() string {
+	variant := "234"
+	if !LLRB234 {
+		variant = "23"
+	}
+	numUpdate := s.Put.Sum + s.Delete.Sum
+	return fmt.Sprintf("Variant:LLRB%s, Put:%d, Delete:%d, Get:%d, Rotate:%0.2f, Flip:%0.2f",
+		variant, s.Put.Sum, s.Delete.Sum, s.Get.Sum,
+		float64(s.Perf.Rotate.Sum)/float64(numUpdate),
+		float64(s.Perf.Flip)/float64(numUpdate))
 }
 
 // Check checks that the invariants of the red-black tree are satisfied.
@@ -238,70 +292,6 @@ func (tree *Tree[K]) Check() error {
 	return nil
 }
 
-// Lock the tree access to the tree data structure
-func (tree *Tree[K]) Lock() {
-	tree.mutex.Lock()
-}
-
-// Unlock the access to the tree data structure
-func (tree *Tree[K]) Unlock() {
-	tree.mutex.Unlock()
-}
-
-// Stats returns a copy of the statistics metrics
-func (tree *Tree[K]) Stats() Stats {
-	tree.stats.Put.Sum = tree.stats.Put.New + tree.stats.Put.Update
-	tree.stats.Get.Sum = tree.stats.Get.Found + tree.stats.Get.NotFound
-	tree.stats.Delete.Sum = tree.stats.Delete.Deleted + tree.stats.Delete.NotFound
-	tree.stats.Perf = pstats
-	tree.stats.Perf.Rotate.Sum = tree.stats.Perf.Rotate.Left + tree.stats.Perf.Rotate.Right
-	return tree.stats
-}
-
-// ResetStats resets all the satistics metrics
-func (tree *Tree[K]) ResetStats() {
-	tree.stats = Stats{}
-	pstats = PerfStats{}
-}
-
-// String returns a pretty drawing of the tree structure.
-//
-//	┌── 6
-//	|   └──[5]
-//	4
-//	│   ┌── 3
-//	└──[2]
-//	    └── 1
-func (tree *Tree[K]) String() string {
-	var buf bytes.Buffer
-	tree.Lock()
-	defer tree.Unlock()
-	printNode(tree.root, &buf, nil, false)
-	return buf.String()
-}
-
-// Map returns the tree in a map
-func (tree *Tree[K]) Map() map[K]interface{} {
-	m := make(map[K]interface{}, tree.Len())
-	for it := tree.Iter(); it.Next(); {
-		m[it.Key()] = it.Val()
-	}
-	return m
-}
-
-// String returns a statistics data in a string
-func (s Stats) String() string {
-	variant := "234"
-	if !LLRB234 {
-		variant = "23"
-	}
-	numUpdate := s.Put.Sum + s.Delete.Sum
-	return fmt.Sprintf("Variant:LLRB%s, Put:%d, Delete:%d, Get:%d, Rotate:%0.2f, Flip:%0.2f",
-		variant, s.Put.Sum, s.Delete.Sum, s.Get.Sum,
-		float64(s.Perf.Rotate.Sum)/float64(numUpdate),
-		float64(s.Perf.Flip)/float64(numUpdate))
-}
-
 /*************************************************************************
  * Iterator
  ************************************************************************/
@@ -321,8 +311,8 @@ type Iter[K constraints.Ordered] struct {
 // another threads or itself during the iteration loop. In such case, the travel
 // could be incomplete and could skip visiting some keys.
 func (tree *Tree[K]) Iter() *Iter[K] {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	it := &Iter[K]{
 		tree: tree,
 		cur:  findMin(tree.root),
@@ -335,8 +325,8 @@ func (tree *Tree[K]) Iter() *Iter[K] {
 
 // Range returns a ranged iterator
 func (tree *Tree[K]) Range(start, end K) *Iter[K] {
-	tree.Lock()
-	defer tree.Unlock()
+	tree.mutex.RLock()
+	defer tree.mutex.RUnlock()
 	it := &Iter[K]{
 		tree: tree,
 		cur:  tree.bigger(tree.root, start, true),
@@ -355,8 +345,8 @@ func (it *Iter[K]) Next() bool {
 		return false
 	}
 	it.last = it.cur
-	it.tree.Lock()
-	defer it.tree.Unlock()
+	it.tree.mutex.RLock()
+	defer it.tree.mutex.RUnlock()
 	if it.cur = it.tree.bigger(it.cur.right, it.cur.name, false); it.cur == nil {
 		it.cur = it.last.up
 		// go up until bigger value found
