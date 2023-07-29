@@ -19,8 +19,9 @@ This is a GoLang version of the C implementation in
 
 # Usages [![API Reference](https://pkg.go.dev/badge/github.com/wolkykim/gomapllrb.svg)](https://pkg.go.dev/github.com/wolkykim/gomapllrb)
 
-### Simple Example (More examples in the unit test code)
-```
+### Simple Example
+
+```go
 import "github.com/wolkykim/gomapllrb"
 
 t := gomapllrb.New[string]()
@@ -31,11 +32,14 @@ t.Delete("key")
 [Output]
 Hello World
 ```
+[[Play the code](https://go.dev/play/p/tNWjKykUgwT)]
+
 Other getter methods: Exist(), GetMin(), GetMax(), Bigger(), Smaller(), EqualOrBigger(), EqualOrSmaller(), ...
-See [API documents](https://pkg.go.dev/github.com/wolkykim/gomapllrb#section-documentation)
+See [API documents](https://pkg.go.dev/github.com/wolkykim/gomapllrb#section-documentation) for details.
 
 ### Iteration
-```
+
+```go
 t := New[int]()
 for _, k := range []int{7, 1, 3, 9, 5} {
     t.Put(k, k*10)
@@ -46,16 +50,16 @@ for it := t.Iter(); it.Next(); {
 }
 
 for it := t.Range(3, 8); it.Next(); {
-    fmt.Printf("%d=%d ", it.Key(), it.Val())
+    fmt.Printf("%d:%d ", it.Key(), it.Val())
 }
 
 [Output]
-1=10 3=30 5=50 7=70 9=90
-3=30 5=50 7=70
+1=10 3=30 5=50 7=70 9=90 3:30 5:50 7:70
 ```
+[[Play the code](https://go.dev/play/p/ua19jQ6WnaS)]
 
 ### Students on DSA course
-```
+```go
 fmt.Println(t, t.Stats())
 
 [Output]
@@ -64,8 +68,9 @@ fmt.Println(t, t.Stats())
 │   └──[5]
 3
 └───1
-Variant:LLRB234, Put:5, Delete:0, Get:16, Rotate:8.60, Flip:4.00
+ Variant:LLRB234, Put:5, Delete:0, Get:0, Rotate:0.80, Flip:0.20
 ```
+[[Play the code](https://go.dev/play/p/TssSkvYvmV-)]
 
 # Performance 2-3-4 LLRB Vs. 2-3 LLRB
 
