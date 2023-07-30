@@ -3,9 +3,9 @@ GoMapLLRB [Left-leaning red-black tree in Go]
 
 [![CI Status](https://github.com/wolkykim/gomapllrb/workflows/CI/badge.svg)](https://github.com/wolkykim/gomapllrb/actions) [![Code Coverage](https://github.com/wolkykim/gomapllrb/wiki/coverage.svg)](https://raw.githack.com/wiki/wolkykim/gomapllrb/coverage.html) [![Go Report Card](https://goreportcard.com/badge/github.com/wolkykim/gomapllrb)](https://goreportcard.com/report/github.com/wolkykim/gomapllrb) [![API Reference](https://pkg.go.dev/badge/github.com/wolkykim/gomapllrb.svg)](https://pkg.go.dev/github.com/wolkykim/gomapllrb)
 
-Package GoMapLLRB implements an in-memory key/value store using LLRB algorithm.
-LLRB(Left-Leaning Red-Black) is a self-balancing binary search tree that
-keeps the keys in order, allowing ordered iteration and finding the nearest keys.
+GoMapLLRB is a Go package that implements an in-memory key/value store using LLRB algorithm.
+LLRB(Left-Leaning Red-Black) is a self-balancing binary search tree that keeps the keys in order,
+allowing ordered iteration and finding the nearest keys.
 
 This is a GoLang version of the C implementation in
 [qLibc](https://github.com/wolkykim/qlibc) library.
