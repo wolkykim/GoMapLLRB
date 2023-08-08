@@ -10,7 +10,7 @@ allowing ordered iteration and finding the nearest keys.
 This is a GoLang version of the C implementation in
 [qLibc](https://github.com/wolkykim/qlibc) library.
 
-# GoMapLLRB vs Build-in map
+# GoMapLLRB vs Built-in map
 
 |                     | GoMapLLRB    | Built-in map |
 | ------------------- | :----------: | :----------: |
