@@ -1,19 +1,12 @@
+//go:build !bench
+
 package gomapllrb
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log"
 	"testing"
-	"time"
 
-	"github.com/spaolacci/murmur3"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/constraints"
-)
-
-const (
-	VERBOSE = false // enable visual inspections
 )
 
 // Test growth of tree
@@ -341,109 +334,4 @@ func TestCheck(t *testing.T) {
 	assert.ErrorContains(tree.Check(), "LLRB property")
 	tree.root.left.left = n
 	assert.NoError(tree.Check())
-}
-
-func TestPerformanceRandom(t *testing.T) {
-	title("Test perfmance / random")
-	num := 1000000
-	keys := make([]uint32, num, num)
-	for i := 0; i < num; i++ {
-		keys[i] = hash32(i)
-	}
-	perfTest(t, keys)
-}
-
-func TestPerformanceAscending(t *testing.T) {
-	title("Test perfmance / ascending")
-	num := 1000000
-	keys := make([]uint32, num, num)
-	for i := 0; i < num; i++ {
-		keys[i] = uint32(i)
-	}
-	perfTest(t, keys)
-}
-
-/*************************************************************************
- * Helpers
- ************************************************************************/
-
-func title(str string) {
-	fmt.Printf("* TEST : %s\n", str)
-}
-
-func assertTreeCheck[K constraints.Ordered](t *testing.T, tree *Tree[K], verbose bool) {
-	if err := tree.Check(); err != nil {
-		t.Error(err)
-		log.Println("ERROR:", err)
-		verbose = true
-	}
-	if verbose {
-		fmt.Print(tree)
-		fmt.Printf("(#nodes %d, #red %d, #black %d\n", tree.Len(), 0, 0)
-	}
-}
-
-func hash32(num int) uint32 {
-	numBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(numBytes, uint32(num))
-	hash := murmur3.New32()
-	hash.Write(numBytes)
-	return hash.Sum32()
-}
-
-func perfTest(t *testing.T, keys []uint32) {
-	assert := assert.New(t)
-	tree := New[uint32]()
-
-	// print key samples
-	fmt.Printf("  Sample")
-	for i, k := range keys {
-		fmt.Printf(" %v", k)
-		if i == 9 {
-			break
-		}
-	}
-	fmt.Printf(", ... (Total %d)\n", len(keys))
-
-	// put
-	start := time.Now()
-	for i, k := range keys {
-		tree.Put(k, nil)
-		if VERBOSE && i == 50 {
-			assertTreeCheck(t, tree, true)
-		}
-	}
-	stats := tree.Stats()
-	fmt.Printf("  Put %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
-	assert.Less(0, tree.Len())
-	assertTreeCheck(t, tree, false)
-
-	// find
-	tree.ResetStats()
-	start = time.Now()
-	for _, k := range keys {
-		tree.Exist(k)
-	}
-	stats = tree.Stats()
-	fmt.Printf("  Find %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
-
-	// iterator
-	tree.ResetStats()
-	start = time.Now()
-	for it := tree.Iter(); it.Next(); {
-		// let it loop
-	}
-	stats = tree.Stats()
-	fmt.Printf("  Iter %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
-
-	// delete
-	tree.ResetStats()
-	start = time.Now()
-	for _, k := range keys {
-		tree.Delete(k)
-	}
-	stats = tree.Stats()
-	fmt.Printf("  Delete %d keys:\t%vms (%v)\n", len(keys), time.Since(start).Milliseconds(), stats)
-	assert.Equal(0, tree.Len())
-	assertTreeCheck(t, tree, false)
 }
