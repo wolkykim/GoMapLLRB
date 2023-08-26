@@ -3,8 +3,12 @@ all: test
 
 .PHONY: test
 test:
-	go clean -testcache
 	go test -v ./... -cover
+
+.PHONY: bench
+bench:
+	go clean -testcache
+	go test -v ./... -tags bench
 
 .PHONY: report
 report:
