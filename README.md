@@ -30,12 +30,12 @@ import "github.com/wolkykim/gomapllrb"
 t := gomapllrb.New[string]()
 t.Put("foo", "Hello World")
 fmt.Println(t.Get("foo"))
-t.Delete("key")
+t.Delete("foo")
 
 [Output]
 Hello World
 ```
-[[Play the code](https://go.dev/play/p/tNWjKykUgwT)]
+[[Play the code](https://go.dev/play/p/lu33sWg1zdz)]
 
 Other getter methods: Exist(), Min(), Max(), Bigger(), Smaller(), EqualOrBigger(), EqualOrSmaller(), ...
 See [API documents](https://pkg.go.dev/github.com/wolkykim/gomapllrb#section-documentation) for details.
